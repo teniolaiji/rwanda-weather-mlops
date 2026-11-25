@@ -1,0 +1,104 @@
+{
+  "model_version": 1,
+  "trained_at": "2026-11-25T15:37:54+00:00",
+  "tensorflow_version": "2.21.0",
+  "test_metrics": {
+    "loss": 0.0934,
+    "accuracy": 0.9758,
+    "precision_macro": 0.9795,
+    "recall_macro": 0.9743,
+    "f1_macro": 0.9768,
+    "f1_weighted": 0.9758,
+    "roc_auc_ovr": 0.9987
+  },
+  "phase_comparison": {
+    "frozen": {
+      "loss": 0.0967,
+      "accuracy": 0.9718,
+      "precision_macro": 0.9697,
+      "recall_macro": 0.9711,
+      "f1_macro": 0.9702,
+      "f1_weighted": 0.9718,
+      "roc_auc_ovr": 0.9987
+    },
+    "fine_tuned": {
+      "loss": 0.0934,
+      "accuracy": 0.9758,
+      "precision_macro": 0.9795,
+      "recall_macro": 0.9743,
+      "f1_macro": 0.9768,
+      "f1_weighted": 0.9758,
+      "roc_auc_ovr": 0.9987
+    }
+  },
+  "per_class": {
+    "fogsmog": {
+      "precision": 0.9588,
+      "recall": 0.9819,
+      "f1-score": 0.9702,
+      "support": 166.0
+    },
+    "hail": {
+      "precision": 0.9828,
+      "recall": 1.0,
+      "f1-score": 0.9913,
+      "support": 114.0
+    },
+    "lightning": {
+      "precision": 1.0,
+      "recall": 0.9722,
+      "f1-score": 0.9859,
+      "support": 72.0
+    },
+    "rain": {
+      "precision": 0.9794,
+      "recall": 0.9406,
+      "f1-score": 0.9596,
+      "support": 101.0
+    },
+    "rainbow": {
+      "precision": 0.9767,
+      "recall": 0.9767,
+      "f1-score": 0.9767,
+      "support": 43.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      163,
+      1,
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      114,
+      0,
+      0,
+      0
+    ],
+    [
+      2,
+      0,
+      70,
+      0,
+      0
+    ],
+    [
+      5,
+      1,
+      0,
+      95,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      42
+    ]
+  ],
+  "n_train_images": 1981
+}
