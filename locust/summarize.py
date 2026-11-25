@@ -1,14 +1,21 @@
 """Turn the Locust CSV results into a README table and a chart.
 
-Usage: python locust/summarize.py            (reads results/c*_stats.csv)
-Writes: results/summary.md and results/latency_vs_containers.png
+Usage: python locust/summarize.py                     (local Docker runs: results/c1_stats.csv ...)
+       python locust/summarize.py --prefix cloud_c    (Azure runs: results/cloud_c1_stats.csv ...)
+Writes: results/<label>summary.md and results/<label>latency_vs_containers.png
 """
+import argparse
 import csv
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
+parser = argparse.ArgumentParser()
+parser.add_argument("--prefix", default="c")
+PREFIX = parser.parse_args().prefix
+LABEL = "" if PREFIX == "c" else PREFIX.rstrip("c").rstrip("_") + "_"
+PATTERN = re.compile(rf"^{re.escape(PREFIX)}(\d+)_stats\.csv$")
 
 
 def read(path):
@@ -20,11 +27,11 @@ def read(path):
 
 
 rows = []
-for path in sorted(RESULTS.glob("c*_stats.csv"), key=lambda p: int(re.findall(r"\d+", p.stem)[0])):
+files = [(int(m.group(1)), p) for p in RESULTS.glob("*_stats.csv") if (m := PATTERN.match(p.name))]
+for n, path in sorted(files):
     r = read(path)
     if not r:
         continue
-    n = int(re.findall(r"\d+", path.stem)[0])
     reqs, fails = int(r["Request Count"]), int(r["Failure Count"])
     rows.append({
         "containers": n,
@@ -39,7 +46,7 @@ for path in sorted(RESULTS.glob("c*_stats.csv"), key=lambda p: int(re.findall(r"
     })
 
 if not rows:
-    raise SystemExit("No results/c*_stats.csv files found. Run the load tests first.")
+    raise SystemExit(f"No results/{PREFIX}<N>_stats.csv files found. Run the load tests first.")
 
 lines = [
     "| Containers | Requests | Requests/s | Avg (ms) | Median (ms) | p95 (ms) | p99 (ms) | Max (ms) | Failures |",
@@ -49,7 +56,7 @@ for r in rows:
     lines.append(f"| {r['containers']} | {r['requests']:,} | {r['rps']:.1f} | {r['avg']:.0f} | {r['median']:.0f} | "
                  f"{r['p95']:.0f} | {r['p99']:.0f} | {r['max']:.0f} | {r['fail_pct']:.1f}% |")
 table = "\n".join(lines)
-(RESULTS / "summary.md").write_text(table + "\n")
+(RESULTS / f"{LABEL}summary.md").write_text(table + "\n")
 print(table)
 
 try:
@@ -67,7 +74,7 @@ try:
     a2.set(title="Throughput vs containers", xlabel="Docker containers", ylabel="Requests per second")
     a2.grid(alpha=.3, axis="y")
     fig.tight_layout()
-    fig.savefig(RESULTS / "latency_vs_containers.png", dpi=150)
-    print(f"\nSaved {RESULTS / 'summary.md'} and {RESULTS / 'latency_vs_containers.png'}")
+    fig.savefig(RESULTS / f"{LABEL}latency_vs_containers.png", dpi=150)
+    print(f"\nSaved {LABEL}summary.md and {LABEL}latency_vs_containers.png in {RESULTS}")
 except ImportError:
     print("matplotlib not installed: table saved, chart skipped")
