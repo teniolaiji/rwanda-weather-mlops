@@ -1,0 +1,15 @@
+.git
+.gitignore
+notebook/
+locust/
+results/
+deploy/
+data/retrain_demo/
+data/uploads/
+data/app.db*
+models/versions/
+**/__pycache__/
+*.zip
+*.ipynb
+.venv/
+venv/
