@@ -8,3 +8,6 @@ kaggle.json
 *.db
 uploads/
 .DS_Store
+
+notebook/project/
+*.zip
