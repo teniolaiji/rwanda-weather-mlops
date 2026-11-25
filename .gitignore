@@ -14,3 +14,6 @@ notebook/project/
 
 notebook/project/
 *.zip
+
+*.db-*
+models/versions/
