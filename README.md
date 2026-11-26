@@ -7,8 +7,8 @@ load testing with Locust.
 
 | | |
 |---|---|
-| **Live app (Azure Container Apps)** | https://YOUR-APP-URL.azurecontainerapps.io |
-| **API docs (Swagger)** | https://YOUR-APP-URL.azurecontainerapps.io/docs |
+| **Live app (Azure Container Apps)** | https://rwanda-weather.gentlemeadow-e55c79cc.southafricanorth.azurecontainerapps.io |
+| **API docs (Swagger)** | https://rwanda-weather.gentlemeadow-e55c79cc.southafricanorth.azurecontainerapps.io/docs |
 | **Video demo (YouTube)** | https://youtu.be/YOUR-VIDEO-ID |
 | **Dataset** | [Weather Image Recognition, Kaggle](https://www.kaggle.com/datasets/jehanbhathena/weather-dataset) |
 | **Notebook** | [`notebook/rwanda_weather_mlops.ipynb`](notebook/rwanda_weather_mlops.ipynb) |
@@ -163,7 +163,9 @@ Needs Docker Desktop, a Docker Hub account and the Azure CLI (`az login`).
 powershell -ExecutionPolicy Bypass -File deploy\azure_deploy.ps1 -DockerUser <docker-hub-username>
 ```
 The script builds and pushes the image, creates the resource group and Container App (2 vCPU, 4 GiB) and
-prints the public URL.
+prints the public URL. Use `-SkipBuild` if the image is already on Docker Hub. Two helper scripts:
+`deploy\check_live.ps1` (smoke test: health, metrics and one prediction per class) and `deploy\reset_live.ps1`
+(fresh container, back to model v1 with an empty database).
 
 ---
 
@@ -187,24 +189,54 @@ prints the public URL.
 ## 6. Load testing results (Locust)
 
 `locust/locustfile.py` simulates users who each send real test photos to `/predict`, waiting 0.5 to 1.5 s
-between requests, and occasionally call `/health`. Every experiment uses **30 concurrent users for 60 seconds**.
-The only thing that changes is the number of containers.
+between requests, and occasionally call `/health`. Every run uses **30 concurrent users for 60 seconds**.
+The only thing that changes is the number of Docker containers.
 
-### Local Docker: 1, 2 and 4 containers behind Nginx (1 CPU each)
-Run with `powershell -ExecutionPolicy Bypass -File locust\run_experiments.ps1`.
+Each Azure Container Apps replica is one Docker container (2 vCPU, 4 GiB) running the image built from
+the `Dockerfile`. Azure's built-in load balancer spreads requests across the replicas. The experiment
+scales the app to 1, 2 and then 4 replicas and runs the same flood against each:
+```powershell
+powershell -ExecutionPolicy Bypass -File locust\run_cloud_experiments.ps1
+```
 
-RESULTS_LOCAL_TABLE
+**Results for `/predict` (30 users, 60 s per run, Azure South Africa North):**
 
-![Local latency vs containers](results/latency_vs_containers.png)
+| Containers | Requests | Requests/s | Avg (ms) | Median (ms) | p95 (ms) | p99 (ms) | Max (ms) | Failures |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 321 | 5.4 | 4170 | 4100 | 5100 | 5500 | 6440 | 0.0% |
+| 2 | 699 | 11.8 | 1366 | 1300 | 2900 | 3200 | 3379 | 0.0% |
+| 4 | 1,058 | 18.1 | 506 | 400 | 1100 | 1600 | 1779 | 0.0% |
 
-### Azure Container Apps: 1, 2 and 4 replicas (2 vCPU each)
-Run with `powershell -ExecutionPolicy Bypass -File locust\run_cloud_experiments.ps1`.
+![Response time and throughput vs number of containers](results/cloud_latency_vs_containers.png)
 
-RESULTS_CLOUD_TABLE
+**How the requests were shared (from the `container` field in each response):**
 
-![Azure latency vs replicas](results/cloud_latency_vs_containers.png)
+| Containers | Predictions answered by each container |
+|---:|---|
+| 2 | 358 / 343 (51% / 49%) |
+| 4 | 281 / 271 / 264 / 259 (26% / 25% / 25% / 24%) |
 
-**What the results show:** RESULTS_INTERPRETATION
+### What the results show
+- **One container is overloaded.** Thirty users wanting about 30 requests per second is far more than one
+  container can handle (about 5 per second), so requests queue up. The median response time is 4.1 s, even
+  though the model itself needs only about 130 ms per image.
+- **Adding containers cuts latency almost in proportion.** With 2 containers the median falls to 1.3 s (3x
+  faster), and with 4 it falls to 0.4 s (10x faster than one). p95 drops from 5.1 s to 1.1 s.
+- **Throughput scales close to linearly:** 5.4, then 11.8, then 18.1 requests per second (3.4x with 4
+  containers), because users who get faster answers send their next request sooner.
+- **The load is shared evenly:** each container answered about 1/N of the predictions.
+- **No request failed** in any run, so the API degrades gracefully under overload: it slows down but stays correct.
+- The `/health` endpoint (no model inference) stays fast throughout. The bottleneck is CPU-bound
+  inference, so scaling out containers is the right fix. Autoscaling on concurrent requests would do it
+  automatically.
+
+### Running the flood yourself
+```powershell
+python -m locust -f locust/locustfile.py --host https://rwanda-weather.gentlemeadow-e55c79cc.southafricanorth.azurecontainerapps.io
+```
+Then open http://localhost:8089, choose the number of users and watch response times live. The same
+experiment can also be run locally with Docker Compose and Nginx (1, 2 and 4 containers) using
+`powershell -ExecutionPolicy Bypass -File locust\run_experiments.ps1`.
 
 ---
 

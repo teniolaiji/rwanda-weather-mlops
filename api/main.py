@@ -34,7 +34,9 @@ MAX_FILE_MB = 10
 
 START_TIME = time.time()
 STARTED_AT = datetime.now(timezone.utc).isoformat(timespec="seconds")
-CONTAINER_ID = socket.gethostname()           # shows which Docker container answered (useful under load balancing)
+# shows which container answered (useful under load balancing). Azure's sandbox gives every replica the
+# same hostname, so a short random id is added to tell replicas apart.
+CONTAINER_ID = os.getenv("CONTAINER_APP_REPLICA_NAME") or f"{socket.gethostname()}-{uuid.uuid4().hex[:6]}"
 
 job = {"state": "idle", "run_id": None, "trigger": None, "logs": [], "report": None, "started_at": None}
 job_lock = threading.Lock()

@@ -31,6 +31,9 @@ foreach ($n in $Containers) {
 
     & $Python -m locust -f locust/locustfile.py --host http://localhost:8080 `
         --headless -u $Users -r $SpawnRate -t $Duration --csv "results/c$n" --only-summary
+    if (-not (Test-Path "results/c${n}_stats.csv")) {
+        throw "Locust produced no results for $n container(s). Is it installed? Try: $Python -m pip install locust"
+    }
 }
 
 & $Python locust/summarize.py

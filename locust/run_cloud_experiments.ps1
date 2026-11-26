@@ -25,13 +25,18 @@ foreach ($n in $Replicas) {
     $deadline = (Get-Date).AddMinutes(5)
     do {
         Start-Sleep -Seconds 10
-        $running = (az containerapp replica list --name $App --resource-group $Group --query "length(@)" -o tsv)
+        # count names rather than query length(@): az is a .cmd file and cmd.exe chokes on the parentheses
+        $running = @(az containerapp replica list --name $App --resource-group $Group --query "[].name" -o tsv |
+                     Where-Object { $_ }).Count
         Write-Host "  running replicas: $running / $n"
     } until ([int]$running -ge $n -or (Get-Date) -gt $deadline)
     Start-Sleep -Seconds 60
 
     & $Python -m locust -f locust/locustfile.py --host $url `
         --headless -u $Users -r $SpawnRate -t $Duration --csv "results/cloud_c$n" --only-summary
+    if (-not (Test-Path "results/cloud_c${n}_stats.csv")) {
+        throw "Locust produced no results for $n replica(s). Is it installed? Try: $Python -m pip install locust"
+    }
 }
 
 az containerapp update --name $App --resource-group $Group --min-replicas 1 --max-replicas 1 --only-show-errors | Out-Null
