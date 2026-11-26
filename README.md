@@ -9,7 +9,7 @@ load testing with Locust.
 |---|---|
 | **Live app (Azure Container Apps)** | https://rwanda-weather.gentlemeadow-e55c79cc.southafricanorth.azurecontainerapps.io |
 | **API docs (Swagger)** | https://rwanda-weather.gentlemeadow-e55c79cc.southafricanorth.azurecontainerapps.io/docs |
-| **Video demo (YouTube)** | https://youtu.be/YOUR-VIDEO-ID |
+| **Video demo (YouTube)** | https://youtu.be/z80r3KB5x5o |
 | **Dataset** | [Weather Image Recognition, Kaggle](https://www.kaggle.com/datasets/jehanbhathena/weather-dataset) |
 | **Notebook** | [`notebook/rwanda_weather_mlops.ipynb`](notebook/rwanda_weather_mlops.ipynb) |
 
