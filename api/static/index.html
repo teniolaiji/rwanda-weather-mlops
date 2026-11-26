@@ -402,6 +402,7 @@ let CLASSES = [], charts = {}, polling = null, uptime = null;
 const $ = id => document.getElementById(id);
 const pct = (v, d = 1) => (v * 100).toFixed(d) + '%';
 const nice = c => NAMES[c] || c;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
 const Nice = c => { const n = nice(c); return n[0].toUpperCase() + n.slice(1); };
 const when = iso => iso ? new Date(iso).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}) : '-';
 function busy(btn, on, label) {
@@ -547,7 +548,7 @@ $('u-btn').onclick = async () => {
     let html = r.saved
       ? `<p class="note ok">Uploaded ${r.saved} image${r.saved > 1 ? 's' : ''} to the database (${by}).</p>`
       : '<p class="note warn">No images were uploaded.</p>';
-    if (r.rejected.length) html += `<p class="note warn">Skipped ${r.rejected.length}: ${r.rejected.slice(0, 4).map(x => `${x.file} (${x.reason})`).join('; ')}${r.rejected.length > 4 ? '; …' : ''}</p>`;
+    if (r.rejected.length) html += `<p class="note warn">Skipped ${r.rejected.length}: ${r.rejected.slice(0, 4).map(x => `${esc(x.file)} (${x.reason})`).join('; ')}${r.rejected.length > 4 ? '; …' : ''}</p>`;
     if (r.auto_retrain_started) { html += `<p class="note ok">${r.pending_total} new images reached the limit of ${r.auto_retrain_threshold}, so retraining started automatically.</p>`; poll(); }
     $('u-out').innerHTML = html; $('u-files').value = '';
   } catch (e) { $('u-out').innerHTML = `<p class="note bad">Upload failed: ${e.message}</p>`; }
@@ -563,7 +564,7 @@ async function loadTeach() {
   pendingCount = n;
   $('threshold-text').textContent = n >= t ? `The automatic limit of ${t} images has been reached.` : `Retraining starts automatically at ${t} new images (${t - n} to go), or you can start it now.`;
   $('recent').innerHTML = '<tr><th>ID</th><th>File</th><th>Class</th><th>Uploaded</th><th>Used in training</th></tr>' +
-    (u.recent.map(r => `<tr><td class="num">${r.id}</td><td>${r.original_name}</td><td>${Nice(r.label)}</td><td>${when(r.uploaded_at)}</td>
+    (u.recent.map(r => `<tr><td class="num">${r.id}</td><td>${esc(r.original_name)}</td><td>${Nice(r.label)}</td><td>${when(r.uploaded_at)}</td>
       <td>${r.used_in_training ? `Yes, run ${r.retrain_run_id}` : '<span class="muted">Waiting</span>'}</td></tr>`).join('')
      || '<tr><td colspan="5" class="muted">Nothing has been uploaded yet.</td></tr>');
   const s = await api('/retrain/status');
@@ -671,7 +672,7 @@ async function loadHealthView() {
   $('h-runs').innerHTML = '<tr><th>Run</th><th>Started by</th><th>Started</th><th class="r">New images</th><th class="r">F1 before</th><th class="r">F1 after</th><th>Outcome</th></tr>' +
     (st.retrain_runs.map(r => `<tr><td class="num">${r.id}</td><td>${r.trigger === 'auto' ? 'Automatic limit' : 'Retrain button'}</td><td>${when(r.started_at)}</td>
       <td class="r num">${r.new_images ?? '-'}</td><td class="r num">${r.previous_f1?.toFixed(4) ?? '-'}</td><td class="r num">${r.new_f1?.toFixed(4) ?? '-'}</td>
-      <td>${r.status === 'running' ? 'Running' : r.status === 'failed' ? `<span class="down">Failed: ${r.message || ''}</span>` : r.accepted ? `<span class="up">Version ${r.model_version} put into use</span>` : 'Kept the current model'}</td></tr>`).join('')
+      <td>${r.status === 'running' ? 'Running' : r.status === 'failed' ? `<span class="down">Failed: ${esc(r.message)}</span>` : r.accepted ? `<span class="up">Version ${r.model_version} put into use</span>` : 'Kept the current model'}</td></tr>`).join('')
      || '<tr><td colspan="7" class="muted">The model has not been retrained yet.</td></tr>');
 }
 

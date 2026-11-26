@@ -17,3 +17,5 @@ notebook/project/
 
 *.db-*
 models/versions/
+
+demo_script.md

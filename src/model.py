@@ -215,8 +215,10 @@ def retrain(new_items, epochs=3, learning_rate=1e-5, tolerance=0.01, replay_per_
         "epochs_run": len(history.history["loss"]),
         "previous_metrics": baseline,
         "new_metrics": result["test_metrics"],
-        "reason": (f"Accepted: macro F1 {new_f1:.4f} vs previous {old_f1:.4f}" if accepted
-                   else f"Rejected: macro F1 {new_f1:.4f} is worse than previous {old_f1:.4f}, kept current model"),
+        "reason": (f"Accepted: macro F1 {new_f1:.4f} vs previous {old_f1:.4f}"
+                   + ("" if new_f1 >= old_f1 else f" (within the {tolerance} tolerance)") if accepted
+                   else f"Rejected: macro F1 {new_f1:.4f} is more than {tolerance} below previous {old_f1:.4f}, "
+                        f"kept current model"),
     }
 
     if accepted:

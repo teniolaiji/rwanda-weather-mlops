@@ -164,7 +164,8 @@ def _iter_zip(data, names):
     except zipfile.BadZipFile:
         return
     for info in zf.infolist():
-        p = Path(info.filename)
+        # Windows PowerShell's Compress-Archive writes "rain\photo.jpg"; normalise to "/" so the folder is found
+        p = Path(info.filename.replace("\\", "/"))
         if info.is_dir() or "__MACOSX" in p.parts or p.name.startswith("."):
             continue
         folder = p.parent.name.lower()
