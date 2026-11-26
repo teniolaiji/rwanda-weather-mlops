@@ -246,3 +246,5 @@ experiment can also be run locally with Docker Compose and Nginx (1, 2 and 4 con
   restart resets the app to the model in the Docker image. A production version would keep data in Azure
   Blob Storage and a managed database, and keep models in a registry.
 - Load tests are run separately from retraining, because retraining uses all the CPU of its container.
+
+
